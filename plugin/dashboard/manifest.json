@@ -1,0 +1,12 @@
+{
+  "name": "project-history",
+  "label": "Project history",
+  "description": "Search notebooks, reports and past chats with source previews.",
+  "icon": "History",
+  "version": "1.0.0",
+  "tab": {"path": "/project-history", "position": "after:sessions"},
+  "slots": ["header-right", "overlay", "chat:bottom"],
+  "entry": "dist/index.js",
+  "css": "dist/style.css",
+  "api": "plugin_api.py"
+}

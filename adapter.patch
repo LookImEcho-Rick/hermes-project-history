@@ -1,0 +1,194 @@
+diff --git a/hermes_cli/web_routers/chat_ws.py b/hermes_cli/web_routers/chat_ws.py
+index 2e88ab4984..1d7a4c1e2f 100644
+--- a/hermes_cli/web_routers/chat_ws.py
++++ b/hermes_cli/web_routers/chat_ws.py
+@@ -13,7 +13,7 @@ import re
+ from pathlib import Path
+ from typing import Any, Dict, Optional
+ 
+-from fastapi import APIRouter, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
++from fastapi import APIRouter, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+ 
+ from agent.interrupt_scope import InterruptScope, bind_interrupt_scope
+ from hermes_cli.active_sessions import ActiveSessionRegistryError, active_session_registry_snapshot
+@@ -114,6 +114,34 @@ def _read_active_session_file(path: Path) -> Optional[str]:
+     return str(data.get("session_id") or "").strip() or None
+ 
+ 
++@router.get("/api/pty/session")
++def active_pty_session(request: Request, channel: str, profile: Optional[str] = None):
++    """Read-only conversation identity for page widgets, including fresh chats.
++
++    Only an existing channel marker is read. Verify it belongs to the requested
++    profile before exposing it; never guess the newest conversation.
++    """
++    import sqlite3
++    from contextlib import closing
++    from hermes_constants import get_hermes_home
++    from hermes_cli.web_server import _get_pty_active_session_files
++    from hermes_cli.web_server_profiles import _config_profile_scope
++
++    if not _VALID_CHANNEL_RE.fullmatch(channel):
++        raise HTTPException(400, "Invalid chat channel.")
++    marker = _get_pty_active_session_files(request.app).get(channel)
++    sid = _read_active_session_file(marker) if marker else None
++    if not sid:
++        return {"session_id": None}
++    with _config_profile_scope(profile):
++        database = get_hermes_home() / "state.db"
++        if not database.is_file():
++            return {"session_id": None}
++        with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True, timeout=2)) as conn:
++            row = conn.execute("SELECT id FROM sessions WHERE id=?", (sid,)).fetchone()
++    return {"session_id": row[0] if row else None}
++
++
+ def _ws_close_reason(text: str) -> str:
+     """Clamp to RFC 6455's 123-byte close-reason limit (uvicorn raises past it);
+     reasons embed an attacker-controlled origin, so truncate rather than crash."""
+diff --git a/web/src/pages/ChatPage.test.tsx b/web/src/pages/ChatPage.test.tsx
+index 9d0615870e..65e6fd0458 100644
+--- a/web/src/pages/ChatPage.test.tsx
++++ b/web/src/pages/ChatPage.test.tsx
+@@ -30,6 +30,7 @@ class FakeWebglAddon {
+ }
+ 
+ class FakeTerminal {
++  static instances: FakeTerminal[] = [];
+   options: Record<string, unknown>;
+   rows = 24;
+   cols = 80;
+@@ -40,6 +41,7 @@ class FakeTerminal {
+ 
+   constructor(options: Record<string, unknown>) {
+     this.options = options;
++    FakeTerminal.instances.push(this);
+   }
+ 
+   attachCustomKeyEventHandler() {
+@@ -108,7 +110,9 @@ vi.mock("@/lib/chatImagePaste", async (importOriginal) => ({
+ 
+ vi.mock("@xterm/addon-fit", () => ({ FitAddon: FakeFitAddon }));
+ vi.mock("@xterm/addon-unicode11", () => ({ Unicode11Addon: class {} }));
+-vi.mock("@xterm/addon-web-links", () => ({ WebLinksAddon: class {} }));
++const webLinkHandlers = vi.hoisted(() => [] as Array<(event: MouseEvent, uri: string) => void>);
++const pluginContexts = vi.hoisted(() => [] as Array<{name: string; context?: Record<string, unknown>}>);
++vi.mock("@xterm/addon-web-links", () => ({ WebLinksAddon: class { constructor(handler: (event: MouseEvent, uri: string) => void) { webLinkHandlers.push(handler); } } }));
+ vi.mock("@xterm/addon-webgl", () => ({ WebglAddon: FakeWebglAddon }));
+ vi.mock("@xterm/xterm", () => ({ Terminal: FakeTerminal }));
+ vi.mock("@/components/ChatSidebar", () => ({
+@@ -119,7 +123,7 @@ vi.mock("@/components/ChatSessionList", () => ({
+ }));
+ vi.mock("@/components/Backdrop", () => ({ Backdrop: () => null }));
+ vi.mock("@/plugins", () => ({
+-  PluginSlot: () => null,
++  PluginSlot: (props: {name: string; context?: Record<string, unknown>}) => { pluginContexts.push(props); return null; },
+ }));
+ vi.mock("@/contexts/usePageHeader", () => ({
+   usePageHeader: () => ({ setEnd: vi.fn(), setTitle: vi.fn() }),
+@@ -353,6 +357,25 @@ describe("ChatPage", () => {
+     return container.querySelector(".hermes-chat-xterm-host")!;
+   }
+ 
++  it("opens both plain and labelled evidence links in a preview and gives image widgets their owning chat context", async () => {
++    webLinkHandlers.length = 0; pluginContexts.length = 0; FakeTerminal.instances.length = 0;
++    await renderChat();
++    const open = vi.fn((event: Event) => event.preventDefault());
++    window.addEventListener("local-ai:open-source", open);
++    try {
++      const uri = `${window.location.origin}/project-history?source=${"a".repeat(32)}`;
++      const terminal = FakeTerminal.instances.at(-1)!;
++      const handler = terminal.options.linkHandler as { activate(event: MouseEvent, text: string): void };
++      handler.activate({} as MouseEvent, uri);
++      webLinkHandlers.at(-1)!({} as MouseEvent, uri);
++      expect(open).toHaveBeenCalledTimes(2);
++      const context = pluginContexts.find(props => props.name === "chat:bottom")?.context;
++      expect(context?.isActive).toBe(true);
++      expect(typeof context?.channel).toBe("string");
++      expect(context).toHaveProperty("profile");
++    } finally { window.removeEventListener("local-ai:open-source", open); }
++  });
++
+   function textPasteEvent(text: string) {
+     const paste = new Event("paste", { bubbles: true, cancelable: true });
+     Object.defineProperty(paste, "clipboardData", {
+diff --git a/web/src/pages/ChatPage.tsx b/web/src/pages/ChatPage.tsx
+index 9baf930498..963903b92f 100644
+--- a/web/src/pages/ChatPage.tsx
++++ b/web/src/pages/ChatPage.tsx
+@@ -15,10 +15,10 @@
+  *          ▼                                                              .
+  *     POSIX PTY → `node ui-tui/dist/entry.js` → tui_gateway + AIAgent     .
+  */
+-
+ import { FitAddon } from "@xterm/addon-fit";
+ import { Unicode11Addon } from "@xterm/addon-unicode11";
+ import { WebLinksAddon } from "@xterm/addon-web-links";
++import { activateTerminalLink } from "@/lib/project-history-links";
+ import { WebglAddon } from "@xterm/addon-webgl";
+ import { Terminal } from "@xterm/xterm";
+ import "@xterm/xterm/css/xterm.css";
+@@ -29,7 +29,6 @@ import { PanelRight, RotateCcw, X } from "lucide-react";
+ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+ import { createPortal } from "react-dom";
+ import { useNavigate, useSearchParams } from "react-router";
+-
+ import { ChatSidebar } from "@/components/ChatSidebar";
+ import { ChatSessionList } from "@/components/ChatSessionList";
+ import { usePageHeader } from "@/contexts/usePageHeader";
+@@ -540,6 +539,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
+       // history in xterm.js so the browser wheel can scroll it directly.
+       scrollback: 5000,
+       screenReaderMode: true, // AT textarea; composer a11y (#36784)
++      linkHandler: { activate: activateTerminalLink },
+       theme: terminalTheme,
+     });
+     termRef.current = term;
+@@ -786,7 +786,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
+     term.loadAddon(unicode11);
+     term.unicode.activeVersion = "11";
+ 
+-    term.loadAddon(new WebLinksAddon());
++    term.loadAddon(new WebLinksAddon(activateTerminalLink));
+ 
+     let mobileInputCleanup: (() => void) | null = null;
+     // xterm occasionally drops committed dead-key/IME text instead of emitting
+@@ -2060,7 +2060,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
+           </div>
+         )}
+       </div>
+-      <PluginSlot name="chat:bottom" />
++      <PluginSlot name="chat:bottom" context={{ channel, profile: scopedProfile, isActive, resumeId: resumeParam }} />
+     </div>
+   );
+ }
+diff --git a/web/src/plugins/slots.ts b/web/src/plugins/slots.ts
+index f040a589a0..7488970b11 100644
+--- a/web/src/plugins/slots.ts
++++ b/web/src/plugins/slots.ts
+@@ -169,13 +169,15 @@ interface PluginSlotProps {
+   /** Optional content rendered when no plugins have claimed the slot.
+    *  Useful for built-in defaults the plugin would replace. */
+   fallback?: React.ReactNode;
++  /** Optional page-owned context. Existing slot components may ignore it. */
++  context?: Record<string, unknown>;
+ }
+ 
+ /** Render all components registered for a given slot, stacked in order.
+  *
+  *  Component re-renders when the slot registry changes so plugins that
+  *  arrive after initial mount show up without a manual refresh. */
+-export function PluginSlot({ name, fallback }: PluginSlotProps) {
++export function PluginSlot({ name, fallback, context }: PluginSlotProps) {
+   const [entries, setEntries] = useState<SlotEntry[]>(() => getSlotEntries(name));
+ 
+   useEffect(() => {
+@@ -194,7 +196,7 @@ export function PluginSlot({ name, fallback }: PluginSlotProps) {
+     Fragment,
+     null,
+     ...entries.map((entry) =>
+-      React.createElement(entry.component, { key: entry.plugin }),
++      React.createElement(entry.component, { key: entry.plugin, ...context }),
+     ),
+   );
+ }

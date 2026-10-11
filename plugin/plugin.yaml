@@ -1,0 +1,9 @@
+name: project-history
+version: 1.0.0
+description: Search local project evidence and preview sources beside Hermes chat.
+author: Local AI
+license: MIT
+provides_tools:
+  - display_images
+  - project_history_search
+  - search_images

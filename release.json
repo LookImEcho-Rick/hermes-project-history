@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "tested_source_revision": "6e5a56d9479d1d01f10c725816924e346f55f172",
+  "package_files": {
+    ".gitignore": "36b7e1600259ad5ff8b728c024ad143580150e4862e5c3d2589d28c76b3f12ba",
+    "adapter.patch": "a1d835e1f69254395844e983b9b8988d5061937320c111c011de242504378d9f",
+    "install.py": "3b61b6b7e17fe51f68423d84bc36524bcd8636ed7a2caab1efd48a848ebbe075",
+    "launch_dashboard.py": "d5347c1ef4d3a233debe7d995ef213f42b1b9f1ad02268c9e35805ea32fb3b16",
+    "LICENSE": "fcf69963b3e502289ad6994b9fbcb75f8667473aab5e24e049773d83e8e135e6",
+    "README.md": "b0a396f1f5f45c6f382a98d54a3f64fe19c515fa0589dab414aa40bb86a8e723",
+    "plugin/image_tool.py": "37aae37cd42bf9e46797985b5fe1d41705982d44c8e0f78f799c38d7c3b4d226",
+    "plugin/plugin.yaml": "1d1ee416814a7384f9969ea0e638c73fe76fe773199633293e3d9dd1a0d27cdd",
+    "plugin/README.md": "bc94d774eca110f413beb5ed3e6ad738d4aab9db6aa29f78bcb57335471a2b7b",
+    "plugin/search.py": "3eba4807f01fc096e8c190ed868dcdf069cd7a6ba8e077e70b65a363f81fe492",
+    "plugin/__init__.py": "f59a4512c6b5820f6ba9a9bf411a6222a3c488782e912df19753326b78d7002f",
+    "skill/SKILL.md": "f9b2fb817d1027508207ab15ea010e972ffc07e3aa6a91fbb937f485f178c54a",
+    "tests/test_history.py": "187079f466dff2c32d1a5735d35385f4c3d2aa616504cae4c3bccad5fd9c2f95",
+    "plugin/dashboard/history.py": "de81e545c0733ec8fb58683feb6a0b83a2604bca04696a931bb33417a138ed2c",
+    "plugin/dashboard/manifest.json": "4656452b1fc248ddc6936db7b031ba2c437b06e44d176d7ab58ae2342979c79d",
+    "plugin/dashboard/package-lock.json": "80383bd9ea33239ddf158b35315587b5593b2ef4b6648211503a6bf1bf339487",
+    "plugin/dashboard/package.json": "dc0b3cdf04047474ee8cdb44351ae734dfd3f453c3b8a1266fba9dd170bbcfa4",
+    "plugin/dashboard/plugin_api.py": "c4a05ce99af93fd3c6c78bb86ce0c03de818430dc622df0a04d8d6ade6beba80",
+    "plugin/dashboard/tsconfig.json": "0999cdc9cc7c16e5c226187b4767967d5047fe63db827baa5ac2cf4621485673",
+    "plugin/dashboard/__init__.py": "fd6ad3f3936aa899f37a3641d1628e0eb6f3cd69e9a255d8e181141cab7e43ce",
+    "plugin/dashboard/dist/index.js": "e5587f2e1a04334042aa8d9fa5979ffcf599e357e40e94f9cee5618f4fefba5e",
+    "plugin/dashboard/dist/style.css": "01f38e6d409c53812edb50ad03b91cad4a0e1e30e946d9e9268011fa4edf4442",
+    "plugin/dashboard/src/index.tsx": "ae39bc6545187b9c128e06b5dc241dfea10fc4028e1e48766f9547a99636a9b6",
+    "plugin/dashboard/tests/ui.test.cjs": "f5f39fc1be2e47e37d2f7b6617cdc320fdc59f446bcac65b717f4a2e98630077",
+    "adapter-files/web/src/lib/project-history-links.test.ts": "bf2d09d256718ba79a1bf05f7b0324f35fd3d1382b0334419f053d2c6bc089ff",
+    "adapter-files/web/src/lib/project-history-links.ts": "5187d0c1a7d81e3812db522164afd22935c264f5db698891535c4a92bc382e67",
+    "adapter-files/web/src/plugins/slots-context.test.tsx": "9ee7db32aba2ebbbfa155205d961f2bc5a9874f33f41ba6027a9389c0cfb9f06"
+  },
+  "adapter_files": {
+    "web/src/pages/ChatPage.tsx": "dbe474bfa961cd195b199fcffe116a9a12af2e8c967d41e80b80fc9e349c12fd",
+    "web/src/pages/ChatPage.test.tsx": "b302d3eef9ebf88acc88e73c2cb032048057d762d1bd0218fb7f4eeb7d6b0551",
+    "web/src/lib/project-history-links.ts": "5187d0c1a7d81e3812db522164afd22935c264f5db698891535c4a92bc382e67",
+    "web/src/lib/project-history-links.test.ts": "bf2d09d256718ba79a1bf05f7b0324f35fd3d1382b0334419f053d2c6bc089ff",
+    "web/src/plugins/slots.ts": "6a96e95795a96bd8973844ee4809039298c51dfee5090c2fc821a05f92b46e5d",
+    "web/src/plugins/slots-context.test.tsx": "9ee7db32aba2ebbbfa155205d961f2bc5a9874f33f41ba6027a9389c0cfb9f06",
+    "hermes_cli/web_routers/chat_ws.py": "a2d2fbe24b2372080109f0ad0e01b6993d305198059277c202dd73f74d08a1fd"
+  },
+  "new_adapter_files": [
+    "web/src/lib/project-history-links.ts",
+    "web/src/lib/project-history-links.test.ts",
+    "web/src/plugins/slots-context.test.tsx"
+  ]
+}
