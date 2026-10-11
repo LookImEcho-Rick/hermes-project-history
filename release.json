@@ -2,9 +2,10 @@
   "version": "1.0.0",
   "tested_source_revision": "6e5a56d9479d1d01f10c725816924e346f55f172",
   "package_files": {
+    ".gitattributes": "e5573b1b52d80b11df19e6db3d55c0d0414d11e4191c404985b50bc0bae5b2ca",
     ".gitignore": "36b7e1600259ad5ff8b728c024ad143580150e4862e5c3d2589d28c76b3f12ba",
     "adapter.patch": "a1d835e1f69254395844e983b9b8988d5061937320c111c011de242504378d9f",
-    "install.py": "3b61b6b7e17fe51f68423d84bc36524bcd8636ed7a2caab1efd48a848ebbe075",
+    "install.py": "268fd4e6f908ff3972c7721bd2cb7f8280ba41c86c6d6267cbb92a4163ddd292",
     "launch_dashboard.py": "d5347c1ef4d3a233debe7d995ef213f42b1b9f1ad02268c9e35805ea32fb3b16",
     "LICENSE": "fcf69963b3e502289ad6994b9fbcb75f8667473aab5e24e049773d83e8e135e6",
     "README.md": "b0a396f1f5f45c6f382a98d54a3f64fe19c515fa0589dab414aa40bb86a8e723",

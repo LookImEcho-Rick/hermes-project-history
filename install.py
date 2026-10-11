@@ -36,7 +36,7 @@ def main():
                 if file.is_file() and not {"node_modules", "__pycache__", ".git"}.intersection(file.parts) and (not (target / file.relative_to(origin)).is_file() or digest(file) != digest(target / file.relative_to(origin))):
                     raise SystemExit("Existing installation differs; preserve/review it before upgrading: " + str(target))
     patch = PACKAGE / "adapter.patch"
-    already = all((source / relative).is_file() and digest(source / relative) == expected for relative, expected in manifest["adapter_files"].items())
+    already = all((source / relative).is_file() and hashlib.sha256((source / relative).read_bytes().replace(b"\r\n", b"\n")).hexdigest() == expected for relative, expected in manifest["adapter_files"].items())
     if not args.plugin_only and not already:
         for relative in manifest["new_adapter_files"]:
             if (source / relative).exists():
